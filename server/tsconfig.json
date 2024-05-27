@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2021" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
+    /* Modules */
+    "module": "commonjs" /* Specify what module code is generated. */,
+    /* Type Checking */
+    "strict": false /* Enable all strict type-checking options. */,
+    "noImplicitAny": false /* Enable error reporting for expressions and declarations with an implied 'any' type. */,
+    "alwaysStrict": false /* Ensure 'use strict' is always emitted. */,
+    "noUnusedLocals": false /* Enable error reporting when local variables aren't read. */,
+    "noUnusedParameters": false /* Raise an error when a function parameter isn't read. */,
+    "esModuleInterop": true,
+    "skipLibCheck": false /* Skip type checking all .d.ts files. */,
+    "baseUrl": "./",
+    "rootDirs": [
+      "src",
+      "../shared"
+    ],
+    "lib": [
+      "ES2021",
+      "DOM"
+    ],
+    "outDir": "./dist" /* Redirect output structure to the directory. */,
+    "paths": {
+      "@shared/*": [
+        "../shared/*"
+      ],
+      "@constants/*": [
+        "./src/constants/*"
+      ],
+      "@utils/*": [
+        "./src/utils/*"
+      ],
+      "@middleware": [
+        "./src/middleware"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "src",
+    "src/.eslintrc.js"
+  ]
+}
