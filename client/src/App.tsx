@@ -3,46 +3,33 @@ import { cn } from "./util/cn";
 import { useSocket } from "./useSocket";
 import { createContext } from "react";
 type GameBoard = Array<Array<"x" | "o" | undefined>>;
-type TPlayerInfo = {
-  roomId: string;
-  playerCode: "x" | "o" | undefined;
-};
-const initialPlayerInfo: TPlayerInfo = {
-  roomId: "",
-  playerCode: undefined,
-};
-
-const GameInfo = createContext({
-  isActiveGame: false,
-  isLookingForGame: false,
-  isYourTurn: false,
-  playerInfo: initialPlayerInfo,
-  setIsYourTurn: (state: boolean) => {
-    state;
-  },
-  gameProgress: { complete: false, winner: "noone", opponentLeft: false },
-});
-// TODO: Use a reducer for the game state
 type TGameState = {
   state: "idle" | "finished" | "opponentLeft" | "inProgress" | "lookingForGame";
   playerCode: "x" | "o" | undefined;
   winner: "x" | "o" | "draw" | "noone";
   isUsersTurn: boolean;
 };
+type TGameAction =
+  | { type: "idle" }
+  | { type: "gameStarted"; playerCode: "x" | "o" }
+  | { type: "gameOver"; winner: "x" | "o" | "draw" | "noone" }
+  | { type: "someoneMoved" }
+  | { type: "opponentLeft" }
+  | { type: "lookingForGame" };
 const initialGameState: TGameState = {
   state: "idle",
   playerCode: undefined,
   winner: "noone",
   isUsersTurn: false,
 };
-type TGameAction =
-  | { type: "idle" }
-  | { type: "gameStarted"; playerCode: "x" | "o" }
-  | { type: "gameOver"; winner: "x" | "o" | "draw" | "noone" }
-  | { type: "opponentMoved" }
-  | { type: "opponentLeft" }
-  | { type: "lookingForGame" };
 
+const GameState = createContext<{
+  state: TGameState;
+  dispatch: (action: TGameAction) => void;
+}>({
+  state: initialGameState,
+  dispatch: () => {},
+});
 const reducer = (state: TGameState, action: TGameAction): TGameState => {
   switch (action.type) {
     case "gameStarted": {
@@ -82,7 +69,8 @@ const reducer = (state: TGameState, action: TGameAction): TGameState => {
         isUsersTurn: false,
       };
     }
-    case "opponentMoved": {
+    case "someoneMoved": {
+      console.log(state);
       return {
         ...state,
         isUsersTurn: !state.isUsersTurn,
@@ -96,77 +84,48 @@ const reducer = (state: TGameState, action: TGameAction): TGameState => {
 function App() {
   const WS = useSocket();
   const [gameState, dispatch] = useReducer(reducer, initialGameState);
-  const [isActiveGame, setIsActiveGame] = useState(false);
-  const [isLookingForGame, setIsLookingForGame] = useState(false);
-  const [isYourTurn, setIsYourTurn] = useState(false);
-  const [gameProgress, setGameProgress] = useState<{
-    complete: boolean;
-    winner: "x" | "o" | "noone";
-    opponentLeft: boolean;
-  }>({ complete: false, winner: "noone", opponentLeft: false });
-  const [playerInfo, setPlayerInfo] = useState<TPlayerInfo>({
-    roomId: "",
-    playerCode: undefined,
-  });
   useEffect(() => {
     WS?.on("gameStarted", (player) => {
-      setPlayerInfo(player);
-      setIsActiveGame(true);
-      setIsLookingForGame(false);
-      if (player.playerCode === "x") {
-        setIsYourTurn(true);
-      } else {
-        setIsYourTurn(false);
-      }
+      dispatch({ type: "gameStarted", playerCode: player.playerCode });
     });
     WS?.on("gameOver", (data) => {
-      setGameProgress({ ...data, opponentLeft: false });
+      // TODO: backend is triggering game over early
+      // console.log("gameOver", data);
+      // dispatch({ type: "gameOver", winner: data.winner });
     });
     WS?.on("opponentLeftGame", () => {
-      setGameProgress({
-        winner: "noone",
-        complete: true,
-        opponentLeft: true,
-      });
+      dispatch({ type: "opponentLeft" });
     });
     return () => {
+      WS?.off("opponentLeftGame");
       WS?.off("gameStarted");
       WS?.off("gameOver");
     };
   }, [WS]);
   const lookForGame = () => {
-    setPlayerInfo(initialPlayerInfo);
-    setIsActiveGame(false);
-    setIsLookingForGame(true);
-    setIsYourTurn(false);
-    setGameProgress({ complete: false, winner: "noone", opponentLeft: false });
     WS?.emit("lookingForGame");
+    dispatch({ type: "lookingForGame" });
   };
   return (
-    <GameInfo.Provider
-      value={{
-        isYourTurn,
-        setIsYourTurn,
-        isLookingForGame,
-        isActiveGame,
-        playerInfo,
-        gameProgress,
-      }}
-    >
+    <GameState.Provider value={{ state: gameState, dispatch }}>
       <div className="mx-auto grid h-dvh place-items-center">
         <div>
-          {isActiveGame ? (
-            <>
-              <h1>Game started! You are player: {playerInfo.playerCode}</h1>
-              <p>{isYourTurn ? "Your turn." : "Opponents turn."}</p>
-            </>
+          {gameState.state === "lookingForGame" ? (
+            <h1>Looking for game...</h1>
           ) : null}
-          {isLookingForGame ? <h1>Looking for game...</h1> : null}
-          {gameProgress.complete && !gameProgress.opponentLeft ? (
-            <h1>The game winner is: {gameProgress.winner}!</h1>
-          ) : gameProgress.opponentLeft ? (
-            <h1>Opponent left, find a new opponent...</h1>
-          ) : null}
+          {gameState.state === "inProgress" ? <h1>Game in progress!</h1> : null}
+          {/* {isActiveGame ? ( */}
+          {/*   <> */}
+          {/*     <h1>Game started! You are player: {playerInfo.playerCode}</h1> */}
+          {/*     <p>{isYourTurn ? "Your turn." : "Opponents turn."}</p> */}
+          {/*   </> */}
+          {/* ) : null} */}
+          {/* {isLookingForGame ? <h1>Looking for game...</h1> : null} */}
+          {/* {gameProgress.complete && !gameProgress.opponentLeft ? ( */}
+          {/*   <h1>The game winner is: {gameProgress.winner}!</h1> */}
+          {/* ) : gameProgress.opponentLeft ? ( */}
+          {/*   <h1>Opponent left, find a new opponent...</h1> */}
+          {/* ) : null} */}
         </div>
         <div>
           <GameBoard />
@@ -186,7 +145,7 @@ function App() {
           </button>
         </div>
       </div>
-    </GameInfo.Provider>
+    </GameState.Provider>
   );
 }
 
@@ -197,22 +156,24 @@ function GameBoard() {
     [undefined, undefined, undefined],
   ];
   const [gameBoard, setGameBoard] = useState(initialBoard);
-  const gameState = useContext(GameInfo);
+  const gameState = useContext(GameState);
   const WS = useSocket();
   useEffect(() => {
     WS?.on("opponentMoved", ({ rowIndex, cellIndex, playerCode }) => {
       updateGameBoard({ rowIndex, cellIndex, playerCode });
-      gameState.setIsYourTurn(true);
     });
-    if (!gameState.isActiveGame) {
+    if (
+      gameState.state.state === "idle" ||
+      gameState.state.state === "lookingForGame"
+    ) {
       setGameBoard(initialBoard);
     }
     return () => {
       WS?.off("opponentMoved");
     };
-  }, [WS, gameState.isActiveGame]);
+  }, [WS, gameState]);
 
-  const updateGameBoard = async (move: {
+  const updateGameBoard = (move: {
     rowIndex: number;
     cellIndex: number;
     playerCode: "x" | "o";
@@ -226,6 +187,7 @@ function GameBoard() {
         }),
       );
     });
+    gameState.dispatch({ type: "someoneMoved" });
   };
   return gameBoard.map((row, rowIndex) => {
     return (
@@ -261,24 +223,23 @@ function GameSquare({
   }) => void;
 }) {
   const WS = useSocket();
-  const gameState = useContext(GameInfo);
+  const gameState = useContext(GameState);
   const [isLoading, setIsLoading] = useState(false);
   const makeMove = async () => {
-    if (!gameState.playerInfo.playerCode) return;
+    if (!gameState.state.playerCode) return;
     try {
       setIsLoading(true);
       const res = await WS?.emitWithAck(
         "makeMove",
         rowIndex,
         cellIndex,
-        gameState.playerInfo.playerCode,
+        gameState.state.playerCode,
       );
       if (res?.success) {
-        gameState.setIsYourTurn(false);
         updateGameBoardCallBack({
           rowIndex: res.row,
           cellIndex: res.cell,
-          playerCode: gameState.playerInfo.playerCode,
+          playerCode: gameState.state.playerCode,
         });
       }
     } catch (error) {
@@ -289,18 +250,20 @@ function GameSquare({
   };
   const disabled =
     isLoading ||
-    !gameState.isYourTurn ||
-    gameState.gameProgress.complete ||
+    !gameState.state.isUsersTurn ||
+    gameState.state.state === "finished" ||
+    gameState.state.state === "idle" ||
+    gameState.state.state === "lookingForGame" ||
+    gameState.state.state === "opponentLeft" ||
     Boolean(state);
   return (
     <button
       disabled={disabled}
       onClick={makeMove}
       className={cn("size-14 border [&:not(:disabled)]:hover:bg-slate-100 ", {
-        "bg-pink-200": state !== gameState.playerInfo.playerCode,
+        "bg-pink-200": state !== gameState.state.playerCode,
         "bg-emerald-200":
-          state === gameState.playerInfo.playerCode &&
-          gameState.playerInfo.playerCode,
+          state === gameState.state.playerCode && gameState.state.playerCode,
         "bg-slate-300": !state,
       })}
     >
