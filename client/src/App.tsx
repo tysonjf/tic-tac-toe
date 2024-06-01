@@ -1,183 +1,312 @@
-import { useState } from "react";
+import { useContext, useEffect, useReducer, useState } from "react";
 import { cn } from "./util/cn";
-type GameBoard = Array<Array<string | undefined>>;
-const initialBoard: GameBoard = [
-  [undefined, undefined, undefined],
-  [undefined, undefined, undefined],
-  [undefined, undefined, undefined],
-];
-const initialPlayer: "x" | "o" = "x";
-const initialWinner: undefined | "x" | "o" = undefined;
-function App() {
-  const [gameBoard, setGameBoard] = useState(initialBoard);
-  const [currentPlayer, setCurrentPlayer] = useState(initialPlayer);
-  const [winner, setWinner] = useState(initialWinner);
-  const updateGameBoard = (
-    selectedCellIndex: number,
-    selectedRowIndex: number,
-    value: string,
-  ) => {
-    setGameBoard((prev) => {
-      const newBoard = prev.map((row, rowIndex) => {
-        return row.map((cell, cellIndex) => {
-          if (
-            rowIndex === selectedRowIndex &&
-            cellIndex === selectedCellIndex
-          ) {
-            return value;
-          } else {
-            return cell;
-          }
-        });
-      });
-      return newBoard;
-    });
-    setCurrentPlayer((prev) => (prev === "x" ? "o" : "x"));
-  };
-  const isWinner = !winner && checkWinner(gameBoard);
-  if (isWinner && isWinner.winner) {
-    setWinner(isWinner.winner);
+import { useSocket } from "./useSocket";
+import { createContext } from "react";
+type GameBoard = Array<Array<"x" | "o" | undefined>>;
+type TPlayerInfo = {
+  roomId: string;
+  playerCode: "x" | "o" | undefined;
+};
+const initialPlayerInfo: TPlayerInfo = {
+  roomId: "",
+  playerCode: undefined,
+};
+
+const GameInfo = createContext({
+  isActiveGame: false,
+  isLookingForGame: false,
+  isYourTurn: false,
+  playerInfo: initialPlayerInfo,
+  setIsYourTurn: (state: boolean) => {
+    state;
+  },
+  gameProgress: { complete: false, winner: "noone", opponentLeft: false },
+});
+// TODO: Use a reducer for the game state
+type TGameState = {
+  state: "idle" | "finished" | "opponentLeft" | "inProgress" | "lookingForGame";
+  playerCode: "x" | "o" | undefined;
+  winner: "x" | "o" | "draw" | "noone";
+  isUsersTurn: boolean;
+};
+const initialGameState: TGameState = {
+  state: "idle",
+  playerCode: undefined,
+  winner: "noone",
+  isUsersTurn: false,
+};
+type TGameAction =
+  | { type: "idle" }
+  | { type: "gameStarted"; playerCode: "x" | "o" }
+  | { type: "gameOver"; winner: "x" | "o" | "draw" | "noone" }
+  | { type: "opponentMoved" }
+  | { type: "opponentLeft" }
+  | { type: "lookingForGame" };
+
+const reducer = (state: TGameState, action: TGameAction): TGameState => {
+  switch (action.type) {
+    case "gameStarted": {
+      return {
+        state: "inProgress",
+        winner: "noone",
+        playerCode: action.playerCode,
+        isUsersTurn: action.playerCode === "x",
+      };
+    }
+    case "idle": {
+      return {
+        ...state,
+        state: "idle",
+      };
+    }
+    case "gameOver": {
+      return {
+        ...state,
+        state: "finished",
+        winner: action.winner,
+      };
+    }
+    case "opponentLeft": {
+      return {
+        state: "opponentLeft",
+        playerCode: undefined,
+        winner: "noone",
+        isUsersTurn: false,
+      };
+    }
+    case "lookingForGame": {
+      return {
+        state: "lookingForGame",
+        playerCode: undefined,
+        winner: "noone",
+        isUsersTurn: false,
+      };
+    }
+    case "opponentMoved": {
+      return {
+        ...state,
+        isUsersTurn: !state.isUsersTurn,
+      };
+    }
+    default:
+      return state;
   }
-  const resetGame = () => {
-    setGameBoard(initialBoard);
-    setCurrentPlayer(initialPlayer);
-    setWinner(initialWinner);
+};
+
+function App() {
+  const WS = useSocket();
+  const [gameState, dispatch] = useReducer(reducer, initialGameState);
+  const [isActiveGame, setIsActiveGame] = useState(false);
+  const [isLookingForGame, setIsLookingForGame] = useState(false);
+  const [isYourTurn, setIsYourTurn] = useState(false);
+  const [gameProgress, setGameProgress] = useState<{
+    complete: boolean;
+    winner: "x" | "o" | "noone";
+    opponentLeft: boolean;
+  }>({ complete: false, winner: "noone", opponentLeft: false });
+  const [playerInfo, setPlayerInfo] = useState<TPlayerInfo>({
+    roomId: "",
+    playerCode: undefined,
+  });
+  useEffect(() => {
+    WS?.on("gameStarted", (player) => {
+      setPlayerInfo(player);
+      setIsActiveGame(true);
+      setIsLookingForGame(false);
+      if (player.playerCode === "x") {
+        setIsYourTurn(true);
+      } else {
+        setIsYourTurn(false);
+      }
+    });
+    WS?.on("gameOver", (data) => {
+      setGameProgress({ ...data, opponentLeft: false });
+    });
+    WS?.on("opponentLeftGame", () => {
+      setGameProgress({
+        winner: "noone",
+        complete: true,
+        opponentLeft: true,
+      });
+    });
+    return () => {
+      WS?.off("gameStarted");
+      WS?.off("gameOver");
+    };
+  }, [WS]);
+  const lookForGame = () => {
+    setPlayerInfo(initialPlayerInfo);
+    setIsActiveGame(false);
+    setIsLookingForGame(true);
+    setIsYourTurn(false);
+    setGameProgress({ complete: false, winner: "noone", opponentLeft: false });
+    WS?.emit("lookingForGame");
   };
   return (
-    <div className="mx-auto grid h-dvh place-items-center">
-      <div className="flex flex-col">
-        {winner && (
-          <h1
-            className={cn("text-lg font-bold w-full text-center", {
-              "text-pink-200": winner === "x",
-              "text-emerald-200": winner === "o",
-            })}
-          >
-            winner is: {winner}!!!
-          </h1>
-        )}
-        <h1 className="text-center w-full pb-4">
-          player: {currentPlayer}'s go
-        </h1>
+    <GameInfo.Provider
+      value={{
+        isYourTurn,
+        setIsYourTurn,
+        isLookingForGame,
+        isActiveGame,
+        playerInfo,
+        gameProgress,
+      }}
+    >
+      <div className="mx-auto grid h-dvh place-items-center">
         <div>
-          {gameBoard.map((row, rowIndex) => {
-            return (
-              <div key={rowIndex} className="flex">
-                {row.map((cell, cellIndex) => {
-                  return (
-                    <button
-                      key={cellIndex}
-                      disabled={Boolean(cell) || Boolean(winner)}
-                      onClick={() => {
-                        updateGameBoard(cellIndex, rowIndex, currentPlayer);
-                      }}
-                      className={cn(
-                        "size-14 border [&:not(:disabled)]:hover:bg-slate-100 ",
-                        {
-                          "bg-pink-200": cell === "x",
-                          "bg-emerald-200": cell === "o",
-                        },
-                      )}
-                    >
-                      {cell}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
+          {isActiveGame ? (
+            <>
+              <h1>Game started! You are player: {playerInfo.playerCode}</h1>
+              <p>{isYourTurn ? "Your turn." : "Opponents turn."}</p>
+            </>
+          ) : null}
+          {isLookingForGame ? <h1>Looking for game...</h1> : null}
+          {gameProgress.complete && !gameProgress.opponentLeft ? (
+            <h1>The game winner is: {gameProgress.winner}!</h1>
+          ) : gameProgress.opponentLeft ? (
+            <h1>Opponent left, find a new opponent...</h1>
+          ) : null}
         </div>
-        <button
-          className="mt-4 py-2 px-4 bg-red-300 hover:bg-red-200"
-          onClick={resetGame}
-        >
-          reset game
-        </button>
+        <div>
+          <GameBoard />
+        </div>
+        <div>
+          <button
+            onClick={lookForGame}
+            className="mt-4 py-2 px-4 bg-green-300 hover:bg-green-200 rounded transition"
+          >
+            Look for new game
+          </button>
+          <button
+            // onClick={leaveGame}
+            className="py-2 px-4 rounded bg-rose-300 hover:bg-rose-200 transition"
+          >
+            leave game
+          </button>
+        </div>
       </div>
-    </div>
+    </GameInfo.Provider>
   );
 }
-type WinnerReturns = {
-  winningPositions: { rowIndex: number; cellIndex: number }[];
-  winner: "x" | "o" | undefined;
-};
-function checkWinner(game: GameBoard): WinnerReturns {
-  const winningPositions = [{ rowIndex: 0, cellIndex: 0 }];
 
-  for (let rowIndex = 0; rowIndex < game.length; rowIndex++) {
-    for (let cellIndex = 0; cellIndex < game[rowIndex].length; cellIndex++) {
-      if (game[rowIndex][cellIndex] === "x") {
-        const xIsWinner = checkLogic(game, "x", rowIndex, cellIndex);
-        if (xIsWinner) {
-          return {
-            winningPositions,
-            winner: "x",
-          };
-        }
-      } else if (game[rowIndex][cellIndex] === "o") {
-        const oIsWinner = checkLogic(game, "o", rowIndex, cellIndex);
-        if (oIsWinner) {
-          return {
-            winningPositions,
-            winner: "o",
-          };
-        }
-      }
+function GameBoard() {
+  const initialBoard: GameBoard = [
+    [undefined, undefined, undefined],
+    [undefined, undefined, undefined],
+    [undefined, undefined, undefined],
+  ];
+  const [gameBoard, setGameBoard] = useState(initialBoard);
+  const gameState = useContext(GameInfo);
+  const WS = useSocket();
+  useEffect(() => {
+    WS?.on("opponentMoved", ({ rowIndex, cellIndex, playerCode }) => {
+      updateGameBoard({ rowIndex, cellIndex, playerCode });
+      gameState.setIsYourTurn(true);
+    });
+    if (!gameState.isActiveGame) {
+      setGameBoard(initialBoard);
     }
-  }
-  return {
-    winningPositions,
-    winner: undefined,
+    return () => {
+      WS?.off("opponentMoved");
+    };
+  }, [WS, gameState.isActiveGame]);
+
+  const updateGameBoard = async (move: {
+    rowIndex: number;
+    cellIndex: number;
+    playerCode: "x" | "o";
+  }) => {
+    setGameBoard((prev) => {
+      return prev.map((row, rowIndex) =>
+        row.map((cell, cellIndex) => {
+          return rowIndex === move.rowIndex && cellIndex === move.cellIndex
+            ? move.playerCode
+            : cell;
+        }),
+      );
+    });
   };
+  return gameBoard.map((row, rowIndex) => {
+    return (
+      <div key={rowIndex} className="flex">
+        {row.map((cell, cellIndex) => {
+          return (
+            <GameSquare
+              key={cellIndex}
+              rowIndex={rowIndex}
+              cellIndex={cellIndex}
+              state={cell}
+              updateGameBoardCallBack={updateGameBoard}
+            />
+          );
+        })}
+      </div>
+    );
+  });
 }
-function checkLogic(
-  game: GameBoard,
-  checkCharacter: "x" | "o",
-  rowIndex: number,
-  cellIndex: number,
-): boolean {
-  // check along the rows
-
-  if (cellIndex + 2 < game[rowIndex].length) {
-    if (
-      game[rowIndex][cellIndex] === checkCharacter &&
-      game[rowIndex][cellIndex + 1] === checkCharacter &&
-      game[rowIndex][cellIndex + 2] === checkCharacter
-    ) {
-      return true;
+function GameSquare({
+  state,
+  rowIndex,
+  cellIndex,
+  updateGameBoardCallBack,
+}: {
+  state: "x" | "o" | undefined;
+  rowIndex: number;
+  cellIndex: number;
+  updateGameBoardCallBack: (move: {
+    rowIndex: number;
+    cellIndex: number;
+    playerCode: "x" | "o";
+  }) => void;
+}) {
+  const WS = useSocket();
+  const gameState = useContext(GameInfo);
+  const [isLoading, setIsLoading] = useState(false);
+  const makeMove = async () => {
+    if (!gameState.playerInfo.playerCode) return;
+    try {
+      setIsLoading(true);
+      const res = await WS?.emitWithAck(
+        "makeMove",
+        rowIndex,
+        cellIndex,
+        gameState.playerInfo.playerCode,
+      );
+      if (res?.success) {
+        gameState.setIsYourTurn(false);
+        updateGameBoardCallBack({
+          rowIndex: res.row,
+          cellIndex: res.cell,
+          playerCode: gameState.playerInfo.playerCode,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
     }
-  }
-
-  if (rowIndex + 2 < game.length) {
-    // check if there is a match along the y axis (vertical match)
-    if (
-      game[rowIndex][cellIndex] === checkCharacter &&
-      game[rowIndex + 1][cellIndex] === checkCharacter &&
-      game[rowIndex + 2][cellIndex] === checkCharacter
-    ) {
-      return true;
-    }
-  }
-  // check along the diagonal right angle (top left to bottom right) which will be next rowIndex and next cellIndex
-  if (rowIndex + 2 < game.length && cellIndex + 2 < game[rowIndex].length) {
-    if (
-      game[rowIndex][cellIndex] === checkCharacter &&
-      game[rowIndex + 1][cellIndex + 1] === checkCharacter &&
-      game[rowIndex + 2][cellIndex + 2] === checkCharacter
-    ) {
-      return true;
-    }
-  }
-  // check along the diagonal left angle (top right to bottom left) which will be next rowIndex and the next cellIndex
-  if (rowIndex + 2 < game.length && cellIndex - 2 >= 0) {
-    if (
-      game[rowIndex][cellIndex] === checkCharacter &&
-      game[rowIndex + 1][cellIndex - 1] === checkCharacter &&
-      game[rowIndex + 2][cellIndex - 2] === checkCharacter
-    ) {
-      return true;
-    }
-  }
-  return false;
+  };
+  const disabled =
+    isLoading ||
+    !gameState.isYourTurn ||
+    gameState.gameProgress.complete ||
+    Boolean(state);
+  return (
+    <button
+      disabled={disabled}
+      onClick={makeMove}
+      className={cn("size-14 border [&:not(:disabled)]:hover:bg-slate-100 ", {
+        "bg-pink-200": state !== gameState.playerInfo.playerCode,
+        "bg-emerald-200":
+          state === gameState.playerInfo.playerCode &&
+          gameState.playerInfo.playerCode,
+        "bg-slate-300": !state,
+      })}
+    >
+      {state}
+    </button>
+  );
 }
+
 export default App;
