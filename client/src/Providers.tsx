@@ -1,6 +1,7 @@
+import { Provider as StoreProvider } from "react-redux";
 import { ReactNode } from "react";
-import { SocketProvider } from "./socketContext";
+import { store } from "@store/store";
 
 export function Providers({ children }: { children: ReactNode }) {
-  return <SocketProvider>{children}</SocketProvider>;
+  return <StoreProvider store={store}>{children}</StoreProvider>;
 }

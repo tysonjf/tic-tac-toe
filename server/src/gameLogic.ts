@@ -1,5 +1,8 @@
 type GameBoard = Array<Array<string | undefined>>;
-type CheckWinnerReturns = { complete: boolean; winner: "x" | "o" | "noone" };
+type CheckWinnerReturns = {
+  complete: boolean;
+  winner: "x" | "o" | "draw";
+};
 export class Game {
   players: Array<{ socketId: string; playerCode: "x" | "o" }>;
   roomId: string;
@@ -111,7 +114,7 @@ export class Game {
     }
 
     const boundChecker = checkMatches.bind(this);
-    let winner: "x" | "o" | "noone" = "noone";
+    let winner: "x" | "o" | "draw" = "draw";
     let complete = this.moveHistory.length === this.MAX_MOVES;
     for (let rowIndex = 0; rowIndex < this.board.length; rowIndex++) {
       for (

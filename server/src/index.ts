@@ -103,10 +103,12 @@ function configureSocketEvent(socket: TServerSocket) {
     }
     activeGame.insertMove(row, cell, playerCode);
     const isWinner = activeGame.checkWinner();
-    io.to(activeGame.roomId).emit("gameOver", {
-      complete: isWinner.complete,
-      winner: isWinner.winner,
-    });
+    if (isWinner.complete) {
+      io.to(activeGame.roomId).emit("gameOver", {
+        complete: isWinner.complete,
+        winner: isWinner.winner,
+      });
+    }
     socket.broadcast.to(activeGame.roomId).emit("opponentMoved", {
       rowIndex: row,
       cellIndex: cell,

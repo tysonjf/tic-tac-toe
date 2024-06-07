@@ -8,13 +8,13 @@ export interface ServerToClientEvents {
     playerCode: "x" | "o";
   }) => void;
   thisPlayersMove: (playerCode: "x" | "o") => void;
-  gameOver: (data: { complete: boolean; winner: "x" | "o" | "noone" }) => void;
+  gameOver: (data: { complete: boolean; winner: "x" | "o" | "draw" }) => void;
   opponentLeftGame: () => void;
 }
 
 export interface ClientToServerEvents {
   message: (message: string) => void;
-  lookingForGame: () => void;
+  lookingForGame: (cb: (result: { success: boolean }) => void) => void;
   leaveGame: (cb: (result: { success: true }) => void) => void;
   makeMove: (
     row: number,
