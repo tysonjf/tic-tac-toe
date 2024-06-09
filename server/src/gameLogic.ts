@@ -17,6 +17,7 @@ export class Game {
     playerCode: "x" | "o";
   }> = [];
   MAX_MOVES = 9;
+  gameCompleted = false;
 
   constructor(roomId: string, usersSockets: string[]) {
     this.players = usersSockets.map((socketId, i) => ({
@@ -141,6 +142,7 @@ export class Game {
         }
       }
     }
+    this.gameCompleted = complete;
     return { complete, winner };
   }
 }

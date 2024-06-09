@@ -1,3 +1,12 @@
+type FoundGame =
+  | {
+      success: true;
+      data: {
+        roomId: string;
+        playerCode: "x" | "o";
+      };
+    }
+  | { success: false; data?: never };
 export interface ServerToClientEvents {
   playerMoved: (row: number, cell: number) => void;
   newGame: (playerCode: "x" | "o") => void;
@@ -13,14 +22,14 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
+  testEvent: () => void;
   message: (message: string) => void;
-  lookingForGame: (cb: (result: { success: boolean }) => void) => void;
-  leaveGame: (cb: (result: { success: true }) => void) => void;
+  lookingForGame: (cb: (result: FoundGame) => void) => void;
+  leaveGame: () => void;
   makeMove: (
-    row: number,
-    cell: number,
+    rowIndex: number,
+    cellIndex: number,
     playerCode: "x" | "o",
-    cb: (move: { row: number; cell: number; success: boolean }) => void,
   ) => void;
 }
 
