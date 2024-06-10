@@ -10,19 +10,27 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 type GameBoard = Array<Array<"x" | "o" | undefined>>;
 type TGameState = {
   gameProgress:
-    | "idle"
-    | "finished"
-    | "opponentLeft"
-    | "inProgress"
-    | "lookingForGame";
+  | "idle"
+  | "finished"
+  | "opponentLeft"
+  | "inProgress"
+  | "lookingForGame" | "waitingForOpponent" | 'opponentRequestingReplay'
   playerCode: "x" | "o" | undefined;
+  username: string;
+  opponentUsername: string;
   winner: "x" | "o" | "draw" | "noone";
   isUsersTurn: boolean;
   gameBoard: GameBoard;
+  scoreHistory: {
+    opponent: Array<'win' | 'lose' | 'draw'>
+    user: Array<'win' | 'lose' | 'draw'>
+  }
 };
 const initialState: TGameState = {
   gameProgress: "idle",
   playerCode: undefined,
+  username: "",
+  opponentUsername: "",
   winner: "noone",
   isUsersTurn: false,
   gameBoard: [
@@ -30,6 +38,10 @@ const initialState: TGameState = {
     [undefined, undefined, undefined],
     [undefined, undefined, undefined],
   ],
+  scoreHistory: {
+    opponent: [],
+    user: []
+  }
 };
 
 const gameSlice = createSlice({
@@ -37,28 +49,63 @@ const gameSlice = createSlice({
   initialState,
   reducers: {
     reset: () => initialState,
-    lookingForGame: (_state) => {
+    requestReplayOpponent: (state) => {
+      state.gameProgress = 'waitingForOpponent'
+    },
+    opponentRequestingReplay: (state) => {
+      state.gameProgress = 'opponentRequestingReplay'
+    },
+    setUsername: (state, action: PayloadAction<string>) => {
+      state.username = action.payload;
+    },
+    lookingForGame: (state) => {
       return {
         ...initialState,
         gameProgress: "lookingForGame",
+        username: state.username,
       };
     },
-    startGame: (state, action: PayloadAction<"x" | "o">) => {
+    startGame: (
+      state,
+      action: PayloadAction<{
+        playerCode: "x" | "o";
+        opponentUsername: string;
+      }>,
+    ) => {
+      state.gameBoard = [
+        [undefined, undefined, undefined],
+        [undefined, undefined, undefined],
+        [undefined, undefined, undefined],
+      ]
       state.gameProgress = "inProgress";
       state.winner = "noone";
-      state.playerCode = action.payload;
-      state.isUsersTurn = action.payload === "x";
+      state.playerCode = action.payload.playerCode;
+      state.isUsersTurn = action.payload.playerCode === "x";
+      state.opponentUsername = action.payload.opponentUsername;
     },
     gameOver: (
       state,
       { payload }: PayloadAction<{ winner: TGameState["winner"] }>,
     ) => {
+      const isWinnerUser = payload.winner === state.playerCode
+      const isDraw = payload.winner === 'draw'
+      const isNoone = payload.winner === 'noone'
+      if (isWinnerUser) {
+        state.scoreHistory.opponent.push('lose')
+        state.scoreHistory.user.push('win')
+      } else if (isDraw || isNoone) {
+        state.scoreHistory.opponent.push('draw')
+        state.scoreHistory.user.push('draw')
+      } else {
+        state.scoreHistory.opponent.push('win')
+        state.scoreHistory.user.push('lose')
+      }
       state.gameProgress = "finished";
       state.winner = payload.winner;
       state.isUsersTurn = false;
     },
-    leaveGame: (_state) => {
-      return initialState;
+    leaveGame: (state) => {
+      return { ...initialState, username: state.username };
     },
     opponentLeft: (state) => {
       state.gameProgress = "opponentLeft";
@@ -96,5 +143,8 @@ export const {
   userMoved,
   opponentMoved,
   leaveGame,
+  setUsername,
+  requestReplayOpponent,
+  opponentRequestingReplay
 } = gameSlice.actions;
 export default gameSlice.reducer;

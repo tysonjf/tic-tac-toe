@@ -24,18 +24,16 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
 
 export const users: Array<{
   socketId: string;
+  username: string;
 }> = [];
 export const waitingRoom: Array<{
   roomId: string;
-  userSocket: string;
+  socketId: string;
+  username: string;
 }> = [];
 export const activeGames: Array<Game> = [];
 
 io.on("connection", (socket) => {
-  users.push({
-    socketId: socket.id,
-  });
-
   configureGameEvents(socket, io);
   socket.on("disconnect", () => {
     const activeGame = activeGames.find((game) =>
@@ -44,7 +42,7 @@ io.on("connection", (socket) => {
     if (activeGame && !activeGame.gameCompleted) {
       socket.broadcast.to(activeGame.roomId).emit("opponentLeftGame");
     }
-    removeUsersActiveGame(socket.id);
+    removeUsersActiveGame(socket.id, io);
     removeUserFromWaitingRoom(socket.id);
   });
 });

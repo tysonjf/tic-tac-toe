@@ -10,16 +10,26 @@ import {
   userMoved,
   leaveGame,
   opponentLeft,
+  requestReplayOpponent,
+  opponentRequestingReplay,
 } from "@/store/gameSlice";
 import assert from "@/util/assert";
 import TitleSection from "./GameTitle";
+import GameUsernameSignup from "./GameUsernameSignup";
+import ScoreBoard from "./GameScoreBoard";
 
 function GameScreen() {
   const ws = useSocket();
+  const username = useAppSelector(({ game }) => game.username);
   const dispatch = useAppDispatch();
   useEffect(() => {
-    ws?.on("gameStarted", (player) => {
-      dispatch(startGame(player.playerCode));
+    ws?.on("gameStarted", (data) => {
+      dispatch(
+        startGame({
+          playerCode: data.playerCode,
+          opponentUsername: data.opponentUsername,
+        }),
+      );
     });
     ws?.on("gameOver", (data) => {
       if (data.complete) {
@@ -29,6 +39,9 @@ function GameScreen() {
     ws?.on("opponentLeftGame", () => {
       dispatch(opponentLeft());
     });
+    ws?.on("opponentWantsToPlayAgain", () => {
+      dispatch(opponentRequestingReplay())
+    })
 
     return () => {
       ws?.off("opponentLeftGame");
@@ -36,18 +49,24 @@ function GameScreen() {
       ws?.off("gameStarted");
     };
   }, [ws]);
-
   return (
-    <div className="mx-auto grid h-dvh place-items-center">
-      <div>
-        <TitleSection />
-      </div>
-      <div>
-        <GameBoard />
-      </div>
-      <div>
-        <ControlPanel />
-      </div>
+    <div>
+      {username.length <= 0 ? (
+        <GameUsernameSignup />
+      ) : (
+        <>
+          <div className="fixed top-0 left-0 w-full">
+            <TitleSection />
+          </div>
+          <div className="pt-24 flex flex-col w-full items-center gap-8">
+            <GameBoard />
+            <ControlPanel />
+          </div>
+          <div className="pt-6 max-w-lg mx-auto ">
+            <ScoreBoard />
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -66,16 +85,38 @@ function ControlPanel() {
     dispatch(lookingForGame());
     const res = await ws?.emitWithAck("lookingForGame");
     if (res?.success) {
-      dispatch(startGame(res.data.playerCode));
+      dispatch(
+        startGame({
+          playerCode: res.data.playerCode,
+          opponentUsername: res.data.opponentUsername,
+        }),
+      );
     }
   };
   const handleLeaveGame = () => {
     ws?.emit("leaveGame");
     dispatch(leaveGame());
   };
+  const handlePlayAgain = () => {
+    ws?.emit('playerCurrentOpponentAgain')
+    dispatch(requestReplayOpponent())
+  }
 
+  const showReplayButton = gameProgress === 'finished' || gameProgress === 'opponentRequestingReplay' || gameProgress === 'waitingForOpponent'
+  const disableLeaveGame = gameProgress === 'idle'
   return (
-    <div className="flex gap-4">
+    <div className="flex flex-col gap-4 ">
+      {showReplayButton ?
+        <button
+          disabled={gameProgress === 'waitingForOpponent'}
+          onClick={handlePlayAgain}
+          className={cn("bg-violet-500 px-4 py-2 rounded [&:not(:disabled)]:hover:bg-violet-400", {
+            '[&:not(:hover)]:animate-pulse': gameProgress === 'waitingForOpponent' || gameProgress === 'opponentRequestingReplay'
+          })}
+        >
+          {gameProgress === 'finished' ? 'play again?' : gameProgress === 'waitingForOpponent' ? 'waiting for opponent' : 'accept opponents rematch?'}
+        </button>
+        : null}
       <button
         onClick={lookForGame}
         className="py-2 px-4 bg-green-300 hover:bg-green-200 rounded transition"
@@ -83,7 +124,7 @@ function ControlPanel() {
         Look for new game
       </button>
       <button
-        disabled={gameProgress !== "inProgress"}
+        disabled={disableLeaveGame}
         onClick={handleLeaveGame}
         className="py-2 px-4 bg-rose-300 [&:not(:disabled)]:hover:bg-rose-200 disabled:bg-gray-400 rounded transition"
       >
@@ -106,22 +147,26 @@ function GameBoard() {
     };
   }, [ws]);
 
-  return game.gameBoard.map((row, rowIndex) => {
-    return (
-      <div key={rowIndex} className="flex">
-        {row.map((cell, cellIndex) => {
-          return (
-            <GameSquare
-              key={cellIndex}
-              rowIndex={rowIndex}
-              cellIndex={cellIndex}
-              state={cell}
-            />
-          );
-        })}
-      </div>
-    );
-  });
+  return (
+    <div>
+      {game.gameBoard.map((row, rowIndex) => {
+        return (
+          <div key={rowIndex} className="flex">
+            {row.map((cell, cellIndex) => {
+              return (
+                <GameSquare
+                  key={cellIndex}
+                  rowIndex={rowIndex}
+                  cellIndex={cellIndex}
+                  state={cell}
+                />
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 function GameSquare({
   state,
@@ -151,11 +196,14 @@ function GameSquare({
     <button
       disabled={disabled}
       onClick={handleMakeMove}
-      className={cn("size-14 border [&:not(:disabled)]:hover:bg-slate-100 ", {
-        "bg-pink-200": state !== game.playerCode,
-        "bg-emerald-200": state === game.playerCode && game.playerCode,
-        "bg-slate-300": !state,
-      })}
+      className={cn(
+        "size-24 m-1 rounded-md text-lg [&:not(:disabled)]:hover:bg-slate-700 [&:not(:disabled)]:hover:scale-110 transition-all",
+        {
+          "bg-pink-200": state !== game.playerCode,
+          "bg-emerald-200": state === game.playerCode && game.playerCode,
+          "bg-slate-800": !state,
+        },
+      )}
     >
       {state}
     </button>

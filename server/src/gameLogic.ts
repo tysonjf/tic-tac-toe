@@ -4,7 +4,13 @@ type CheckWinnerReturns = {
   winner: "x" | "o" | "draw";
 };
 export class Game {
-  players: Array<{ socketId: string; playerCode: "x" | "o" }>;
+  playerWantsReplay: string
+  players: Array<{
+    socketId: string;
+    playerCode: "x" | "o";
+    username: string;
+    score: number;
+  }>;
   roomId: string;
   board: GameBoard = [
     [undefined, undefined, undefined],
@@ -18,20 +24,43 @@ export class Game {
   }> = [];
   MAX_MOVES = 9;
   gameCompleted = false;
+  gameHistory: Array<{ winnerCode: 'x' | 'o' | 'draw', username: string | undefined }> = []
 
-  constructor(roomId: string, usersSockets: string[]) {
-    this.players = usersSockets.map((socketId, i) => ({
-      socketId,
+  constructor(
+    roomId: string,
+    users: Array<{ socketId: string; username: string }>,
+  ) {
+    this.players = users.map((user, i) => ({
+      socketId: user.socketId,
+      username: user.username,
       playerCode: i === 0 ? "x" : "o",
+      score: 0,
     }));
     this.roomId = roomId;
   }
 
-  getPlayerCodeBySocketId(socketId: string) {
+  startNewGame() {
+    this.board = [
+      [undefined, undefined, undefined],
+      [undefined, undefined, undefined],
+      [undefined, undefined, undefined],
+    ]
+    this.gameCompleted = false
+    this.moveHistory = []
+    this.players = this.players.map((player) => ({ ...player, playerCode: player.playerCode === 'x' ? 'o' : 'x' }))
+    this.playerWantsReplay = undefined
+  }
+
+  rollBackLastMove() {
+    const lastMove = this.moveHistory.at(-1)
+    this.board[lastMove.rowIndex][lastMove.cellIndex] = undefined
+  }
+
+  getPlayerBySocketId(socketId: string) {
     return this.players.find((player) => player.socketId === socketId);
   }
 
-  getOpponentCodeByCurrentUserSocketId(socketId: string) {
+  getOpponentByCurrentUserSocketId(socketId: string) {
     return this.players.find((player) => player.socketId !== socketId);
   }
 
@@ -143,6 +172,26 @@ export class Game {
       }
     }
     this.gameCompleted = complete;
+    if (complete) {
+      this.updateScore(winner);
+    }
     return { complete, winner };
+  }
+  updateScore(winner: "x" | "o" | "draw") {
+    for (let index = 0; index < this.players.length; index++) {
+      if (this.players[index].playerCode === winner) {
+        this.players[index].score += 1;
+      }
+    }
+    this.gameHistory.push({
+      winnerCode: winner,
+      username: winner === 'draw' ? undefined : this.players.find((player) => player.playerCode === winner).username
+    });
+  }
+  getScorePlayerScore(socketId: string) {
+    return this.players.find((player) => player.socketId === socketId).score;
+  }
+  getScoreHistoryForAllGames() {
+    return this.gameHistory
   }
 }

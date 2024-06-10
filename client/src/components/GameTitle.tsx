@@ -19,21 +19,31 @@ export default function TitleSection() {
   if (gameProgress === "finished") {
     return <GameOver />;
   }
+  if (gameProgress === "opponentRequestingReplay") {
+    return <OpponentRequestingReplay />
+  }
 }
 const Idle = () => {
   return (
-    <div>
+    <div className="w-full text-center py-2 px-4 bg-slate-300">
       <h1>Ready to play? Click look for a game.</h1>
     </div>
   );
 };
 const LookingForGame = () => {
   return (
-    <div>
+    <div className="w-full text-center py-2 px-4 bg-slate-300">
       <h1 className="animate-pulse">Looking for game...</h1>
     </div>
   );
 };
+const OpponentRequestingReplay = () => {
+  return (
+    <div className="w-full text-center py-2 px-4 bg-slate-300">
+      <h1>Opponent is requesting a rematch...</h1>
+    </div>
+  );
+}
 const InProgress = () => {
   const isUsersTurn = useAppSelector(({ game }) => game.isUsersTurn);
 
@@ -52,10 +62,7 @@ const InProgress = () => {
   );
 };
 const GameOver = () => {
-  const { winner, playerCode } = useAppSelector(({ game }) => ({
-    winner: game.winner,
-    playerCode: game.playerCode,
-  }));
+  const { winner, playerCode } = useAppSelector(({ game }) => game);
   const winnerMessage =
     winner === "x" || winner === "o"
       ? winner === playerCode
