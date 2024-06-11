@@ -1,7 +1,7 @@
-import { TIoServer, TServerSocket, activeGames, users, waitingRoom } from "src";
-import { Game } from "src/gameLogic";
-import { removeUserFromWaitingRoom, removeUsersActiveGame } from "src/services/manageUsers";
-
+import { TIoServer, TServerSocket, activeGames, users, waitingRoom } from "@src/index";
+import { Game } from "@src/gameLogic";
+import { removeUserFromWaitingRoom, removeUsersActiveGame } from "@src/services/manageUsers";
+import crypto from "crypto";
 export function configureGameEvents(socket: TServerSocket, io: TIoServer) {
   socket.on("submitUsername", (username, cb) => {
     users.push({

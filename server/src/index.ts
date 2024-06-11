@@ -13,7 +13,7 @@ import {
 } from "./services/manageUsers";
 const app = express();
 const httpServer = createServer(app);
-
+const PORT = process.env.PORT || 3000;
 export type TServerSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 export type TIoServer = typeof io;
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
@@ -46,6 +46,6 @@ io.on("connection", (socket) => {
     removeUserFromWaitingRoom(socket.id);
   });
 });
-httpServer.listen(3000, () => {
+httpServer.listen(PORT, () => {
   console.log("listening on *:3000");
 });

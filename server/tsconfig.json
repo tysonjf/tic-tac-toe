@@ -23,6 +23,9 @@
     ],
     "outDir": "./dist" /* Redirect output structure to the directory. */,
     "paths": {
+      "@src/*": [
+        "./src/*"
+      ],
       "@shared/*": [
         "../shared/*"
       ],

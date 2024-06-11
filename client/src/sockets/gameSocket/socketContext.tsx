@@ -4,10 +4,8 @@ import {
   ServerToClientEvents,
   ClientToServerEvents,
 } from "@shared/socketTypes";
-const URL = import.meta.env.PROD
-  ? import.meta.env.API_URL
-  : "http://localhost:3000";
-
+const URL = import.meta.env.VITE_API_URL as string;
+debugger;
 export type TSocketContext = Socket<
   ServerToClientEvents,
   ClientToServerEvents
