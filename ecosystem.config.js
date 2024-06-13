@@ -8,7 +8,7 @@ module.exports = {
 
       // Logging
       out_file: "./server-out.log",
-      error_file: "./serve-error.log",
+      error_file: "./server-error.log",
       merge_logs: true,
       log_date_format: "DD-MM HH:mm:ss Z",
       log_type: "json",
