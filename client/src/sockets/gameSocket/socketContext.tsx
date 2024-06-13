@@ -5,7 +5,6 @@ import {
   ClientToServerEvents,
 } from "@shared/socketTypes";
 const URL = import.meta.env.VITE_API_URL as string;
-debugger;
 export type TSocketContext = Socket<
   ServerToClientEvents,
   ClientToServerEvents
