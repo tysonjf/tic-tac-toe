@@ -1,4 +1,4 @@
-import { TIoServer, activeGames, waitingRoom } from "@src/index";
+import { TIoServer, activeGames, users, waitingRoom } from "@src/index";
 
 export function removeUsersActiveGame(socketId: string, io: TIoServer) {
   const activeGameIndex = activeGames.findIndex((game) => game.players.some((player) => player.socketId === socketId));
@@ -14,4 +14,7 @@ export function removeUserFromWaitingRoom(socketId: string) {
   if (index !== -1) {
     waitingRoom.splice(index, 1);
   }
+}
+export function updateLastActive(socketId: string) {
+  users.find((user) => user.socketId === socketId).lastActive = Date.now();
 }

@@ -4,6 +4,7 @@ type CheckWinnerReturns = {
   winner: "x" | "o" | "draw";
 };
 export class Game {
+  lastActive: number;
   playerWantsReplay: string
   players: Array<{
     socketId: string;
@@ -77,6 +78,7 @@ export class Game {
   }
 
   insertMove(row: number, cell: number, value: "x" | "o") {
+    this.lastActive = Date.now();
     if (!this.board[row][cell]) {
       this.board[row][cell] = value;
       this.moveHistory.push({
