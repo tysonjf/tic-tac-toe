@@ -1,10 +1,7 @@
 import { createServer } from "http";
 import express from "express";
 import { Server, Socket } from "socket.io";
-import {
-  ClientToServerEvents,
-  ServerToClientEvents,
-} from "@shared/socketTypes";
+import { ClientToServerEvents, ServerToClientEvents } from "@tic-tac-toe/shared/socketTypes";
 import { Game } from "./gameLogic";
 import { configureGameEvents } from "./events/gameEvents";
 import {

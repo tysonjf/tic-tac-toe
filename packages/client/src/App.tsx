@@ -1,6 +1,5 @@
 import GameScreen from "@components/GameScreen";
 import { SocketProvider } from "@sockets/gameSocket/socketContext";
-
 function App() {
   return (
     <>

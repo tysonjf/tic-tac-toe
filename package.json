@@ -1,0 +1,22 @@
+{
+  "name": "tic-tac-toe",
+  "version": "1.0.0",
+  "scripts": {
+    "start:client": "npm run dev --workspace=packages/client",
+    "start:server": "npm run dev --workspace=packages/server"
+  },
+  "keywords": [
+    "tic-tac-toe"
+  ],
+  "author": "Tyson",
+  "license": "ISC",
+  "description": "",
+  "workspaces": [
+    "packages/client",
+    "packages/server",
+    "packages/shared"
+  ],
+  "dependencies": {
+    "typescript": "^5.4.5"
+  }
+}
