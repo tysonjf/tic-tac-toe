@@ -14,7 +14,12 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const socket: Socket = io(URL);
+    console.log("Connecting to server", URL);
     setSocket(socket);
+    socket.on("connect", () => {
+      console.log("Connected to server");
+    });
+
     return () => {
       socket.disconnect();
     };
