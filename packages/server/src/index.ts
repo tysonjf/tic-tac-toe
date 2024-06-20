@@ -1,5 +1,4 @@
-// import { createServer } from "http";
-import https from "node:https"
+import { createServer } from "http";
 import express from "express";
 import { Server, Socket } from "socket.io";
 import { ClientToServerEvents, ServerToClientEvents } from "@tic-tac-toe/shared/socketTypes";
@@ -10,13 +9,12 @@ import {
   removeUsersActiveGame,
 } from "./services/manageUsers";
 const app = express();
-// const httpServer = createServer(app);
-const httpsServer = https.createServer(app);
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 export type TServerSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 export type TIoServer = typeof io;
 // const cors = env.NODE_ENV === "production" ? "https://tictactoe.tysontech.org" : "http://localhost:3000";
-const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpsServer, {
+const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
     origin: "https://tictactoe.tysontech.org"
   },
@@ -76,6 +74,6 @@ io.on("connection", (socket) => {
 app.get("/health", (_req, res) => {
   res.send("ok");
 });
-httpsServer.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log("listening on *:3000");
 });
