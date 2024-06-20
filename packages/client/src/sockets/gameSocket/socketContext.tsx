@@ -2,7 +2,7 @@ import { createContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { ClientToServerEvents, ServerToClientEvents } from "@tic-tac-toe/shared/socketTypes";
 
-const URL = import.meta.env.DEV ? 'http://localhost:3000' : import.meta.env.VITE_API_URL as string;
+const URL = import.meta.env.DEV ? 'http://localhost:3000' : import.meta.env.VITE_WS_URL as string;
 export type TSocketContext = Socket<
   ServerToClientEvents,
   ClientToServerEvents
