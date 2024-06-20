@@ -13,9 +13,10 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 export type TServerSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 export type TIoServer = typeof io;
+// const cors = env.NODE_ENV === "production" ? "https://tictactoe.tysontech.org" : "http://localhost:3000";
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
-    origin: "*",
+    origin: "https://tictactoe.tysontech.org"
   },
 });
 
