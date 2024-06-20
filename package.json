@@ -7,7 +7,8 @@
     "build:client": "npm run build --workspace=packages/client",
     "build:server": "npm run build --workspace=packages/server",
     "install:client": "npm install --workspace=packages/client",
-    "install:server": "npm install --workspace=packages/server"
+    "install:server": "npm install --workspace=packages/server",
+    "start:prod:server": "npm run start:prod --workspace=packages/server"
   },
   "keywords": [
     "tic-tac-toe"

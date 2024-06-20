@@ -5,10 +5,9 @@
   "main": "src/index.ts",
   "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index.ts -p ./tsconfig.json",
     "build": "rm -rf dist && tsc -p ./tsconfig.json && tsc-alias -p tsconfig.json",
-    "start_prod": "pm2 start ecosystem.config.js --env production"
+    "start:prod": "node dist/index.js"
   },
   "keywords": [],
   "author": "Tyson",
