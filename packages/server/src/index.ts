@@ -69,6 +69,10 @@ io.on("connection", (socket) => {
     removeUserFromWaitingRoom(socket.id);
   });
 });
+// health check url
+app.get("/health", (_req, res) => {
+  res.send("ok");
+});
 httpServer.listen(PORT, () => {
   console.log("listening on *:3000");
 });
