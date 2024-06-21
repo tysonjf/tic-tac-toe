@@ -1,16 +1,14 @@
 #!/bin/bash
 
 # Script to restart a PM2 process using ecosystem.config.js
-# Add build server in ./server
 
-echo "Building server files..."
-cd ./server
+echo "Installing client dependencies..."
 
 # install dependencies
-pnpm install
+npm run install:client
 # if installing fails, stop the script
 if [ $? -ne 0 ]; then
-  echo "Installing server dependencies failed."
+  echo "Installing client dependencies failed."
   exit 1
 fi
 # explain this ^
@@ -22,15 +20,29 @@ fi
 # so $? -ne 0 means "if the exit status is not 0"
 
 # build the server files
-pnpm run build
+npm run build:client
 # if building fails, stop the script
+if [ $? -ne 0 ]; then
+  echo "Building client files failed."
+  exit 1
+fi
+
+
+# install server dependencies
+npm run install:server
+# if installing fails, stop the script
+if [ $? -ne 0 ]; then
+  echo "Installing client files failed."
+  exit 1
+fi
+
+# install server dependencies
+npm run build:server
+# if installing fails, stop the script
 if [ $? -ne 0 ]; then
   echo "Building server files failed."
   exit 1
 fi
-
-# jump back to the root directory
-cd ../
 
 # Set the name of the application as defined in ecosystem.config.js
 APP_NAME="tic-tac-toe-server"
@@ -45,7 +57,7 @@ pm2 delete $APP_NAME
 
 # Start the PM2 process using ecosystem.config.js
 echo "Starting PM2 process..."
-pm2 start ecosystem.config.js --env production
+npm run start:server
 if [ $? -ne 0 ]; then
   echo "Starting PM2 process failed."
   exit 1

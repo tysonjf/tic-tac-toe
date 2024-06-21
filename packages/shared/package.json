@@ -1,0 +1,11 @@
+{
+  "name": "@tic-tac-toe/shared",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+  },
+  "keywords": [],
+  "author": "Tyson",
+  "license": "ISC",
+  "description": ""
+}

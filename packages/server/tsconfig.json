@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2021" ,
+    /* Modules */
+    "module": "commonjs" ,
+    /* Type Checking */
+    "strict": false ,
+    "noImplicitAny": false ,
+    "alwaysStrict": false ,
+    "noUnusedLocals": false ,
+    "noUnusedParameters": false ,
+    "esModuleInterop": true,
+    "skipLibCheck": false ,
+    "baseUrl": "./",
+    "rootDirs": [
+      "src",
+    ],
+    "lib": [
+      "ES2021",
+      "DOM"
+    ],
+    "outDir": "./dist" ,
+    "paths": {
+      "@src/*": [
+        "./src/*"
+      ],
+      "@constants/*": [
+        "./src/constants/*"
+      ],
+      "@utils/*": [
+        "./src/utils/*"
+      ],
+      "@middleware": [
+        "./src/middleware"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "src",
+  ]
+}

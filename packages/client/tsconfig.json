@@ -24,7 +24,6 @@
       "@hooks/*": ["src/hooks/*"],
       "@sockets/*": ["src/sockets/*"],
       "@store/*": ["src/store/*"],
-      "@shared/*": ["../shared/*"]
     }
   },
   "include": ["src"],
@@ -32,5 +31,5 @@
     {
       "path": "./tsconfig.node.json"
     }
-  ]
+ ]
 }

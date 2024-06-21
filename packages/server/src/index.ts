@@ -1,10 +1,7 @@
 import { createServer } from "http";
 import express from "express";
 import { Server, Socket } from "socket.io";
-import {
-  ClientToServerEvents,
-  ServerToClientEvents,
-} from "@shared/socketTypes";
+import { ClientToServerEvents, ServerToClientEvents } from "@tic-tac-toe/shared/socketTypes";
 import { Game } from "./gameLogic";
 import { configureGameEvents } from "./events/gameEvents";
 import {
@@ -16,9 +13,10 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 export type TServerSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 export type TIoServer = typeof io;
+// const cors = env.NODE_ENV === "production" ? "https://tictactoe.tysontech.org" : "http://localhost:3000";
 const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
   cors: {
-    origin: "*",
+    origin: "https://tictactoe.tysontech.org"
   },
 });
 
@@ -71,6 +69,10 @@ io.on("connection", (socket) => {
     removeUsersActiveGame(socket.id, io);
     removeUserFromWaitingRoom(socket.id);
   });
+});
+// health check url
+app.get("/health", (_req, res) => {
+  res.send("ok");
 });
 httpServer.listen(PORT, () => {
   console.log("listening on *:3000");
