@@ -8,7 +8,7 @@
     "install:client": "npm install --workspace=packages/client",
     "install:server": "npm install --workspace=packages/server",
     "dev:server": "docker compose -f docker-compose.yml up",
-    "start:server": "docker compose -f docker-compose.prod.yml up --build"
+    "start:server": "docker compose -f docker-compose.prod.yml up --build -d"
   },
   "keywords": [
     "tic-tac-toe"
