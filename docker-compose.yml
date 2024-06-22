@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  tic-tac-toe-dev:
+    build:
+      context: .
+      target: development # This specifies that Docker should use the 'development' stage
+    volumes:
+      - .:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+
